@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "dynamic_asset_generator",
+  "version": "${version}",
+  "name": "DynamicAssetGenerator",
+  "description": "Dynamically generate and load assets on runtime",
+  "authors": [
+    "Nerjal Nosk",
+    "Luke Bemish"
+  ],
+  "contact": {},
+  "license": "GNU",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "dev.lukebemish.dynamicassetgenerator.DynamicAssetGeneratorInitClient"
+    ],
+    "main": [
+      "dev.lukebemish.dynamicassetgenerator.DynamicAssetGeneratorInit"
+    ]
+  },
+  "mixins": [
+    "dynamic_asset_generator.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.11",
+    "fabric": "*",
+    "minecraft": "1.19"
+  }
+}
