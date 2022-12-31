@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.client.util;
 
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.ColorHolder;
@@ -63,9 +68,8 @@ public class Clusterer {
         }
         Cluster bgCluster = new Cluster();
         for (ColorHolder c : bg.getStream().toList()) {
-            ColorHolder v = c;
-            samples.remove(v);
-            bgCluster.add(v);
+            samples.remove(c);
+            bgCluster.add(c);
         }
         out.sampleList.add(bgCluster);
         for (ColorHolder v : samples) {

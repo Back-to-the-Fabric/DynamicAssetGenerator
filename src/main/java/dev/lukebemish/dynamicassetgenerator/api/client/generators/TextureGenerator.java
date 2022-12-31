@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.api.client.generators;
 
 import com.google.gson.JsonSyntaxException;
@@ -5,53 +10,57 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.lukebemish.dynamicassetgenerator.api.IResourceGenerator;
+import dev.lukebemish.dynamicassetgenerator.api.ResourceGenerationContext;
 import dev.lukebemish.dynamicassetgenerator.impl.DynamicAssetGenerator;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.IoSupplier;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
-public class DynamicTextureSource implements IResourceGenerator {
-    public static final Codec<DynamicTextureSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+public class TextureGenerator implements IResourceGenerator {
+    public static final Codec<TextureGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("output_location").forGetter(dyn->dyn.outputLocation),
             ITexSource.CODEC.fieldOf("input").forGetter(dyn->dyn.input)
-    ).apply(instance, DynamicTextureSource::new));
+    ).apply(instance, TextureGenerator::new));
 
     private final ResourceLocation outputLocation;
     private final ITexSource input;
 
-    private Supplier<NativeImage> source;
+    private Function<ResourceGenerationContext, IoSupplier<NativeImage>> source;
 
-    public DynamicTextureSource(ResourceLocation outputLocation, ITexSource source) {
+    public TextureGenerator(ResourceLocation outputLocation, ITexSource source) {
         this.input = source;
         this.outputLocation = outputLocation;
         if (input!=null && outputLocation!=null) {
-            this.source = () -> this.input.getSupplier(new TexSourceDataHolder()).get();
+            this.source = context -> this.input.getSupplier(new TexSourceDataHolder(), context);
         } else {
             DynamicAssetGenerator.LOGGER.error("Could not set up DynamicTextureSource: {}", this);
         }
     }
 
     @Override
-    public @NotNull Supplier<InputStream> get(ResourceLocation outRl) {
-        if (this.source == null) return ()->null;
+    public IoSupplier<InputStream> get(ResourceLocation outRl, ResourceGenerationContext context) {
+        if (this.source == null) return null;
+        IoSupplier<NativeImage> imageGetter = this.source.apply(context);
+        if (imageGetter == null) return null;
         return () -> {
-            try (NativeImage image = source.get()) {
-                if (image != null) {
-                    return new ByteArrayInputStream(image.asByteArray());
-                }
+            try (NativeImage image = imageGetter.get()) {
+                return new ByteArrayInputStream(image.asByteArray());
             } catch (IOException e) {
                 DynamicAssetGenerator.LOGGER.error("Could not write image to stream: {}", outRl, e);
+                throw e;
             } catch (JsonSyntaxException e) {
                 DynamicAssetGenerator.LOGGER.error("Issue loading texture source JSON for output: {}", outRl, e);
+                throw new IOException(e);
             } catch (Exception remainder) {
                 DynamicAssetGenerator.LOGGER.error("Issue creating texture from source JSON for output: {}",outRl, remainder);
+                throw new IOException(remainder);
             }
-            return null;
         };
     }
 
@@ -61,7 +70,7 @@ public class DynamicTextureSource implements IResourceGenerator {
     }
 
     public ResourceLocation getOutputLocation() {
-        return new ResourceLocation(this.outputLocation.getNamespace(), "assets/dynamic_asset_generator/textures/" +this.outputLocation.getPath()+".png");
+        return new ResourceLocation(this.outputLocation.getNamespace(), "textures/"+this.outputLocation.getPath()+".png");
     }
 
     @Override

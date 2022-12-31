@@ -1,18 +1,24 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.api.client.generators.texsources;
 
-import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.lukebemish.dynamicassetgenerator.api.ResourceGenerationContext;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.ITexSource;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.TexSourceDataHolder;
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.Palette;
 import dev.lukebemish.dynamicassetgenerator.impl.client.util.IPalettePlan;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Supplier;
-
-public class CombinedPaletteImage implements ITexSource {
+public record CombinedPaletteImage(ITexSource overlay, ITexSource background, ITexSource paletted,
+                                   boolean includeBackground, boolean stretchPaletted, int extendPaletteSize)
+        implements ITexSource {
     public static final Codec<CombinedPaletteImage> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ITexSource.CODEC.fieldOf("overlay").forGetter(s->s.overlay),
             ITexSource.CODEC.fieldOf("background").forGetter(s->s.background),
@@ -28,56 +34,44 @@ public class CombinedPaletteImage implements ITexSource {
     }
 
     @Override
-    public @NotNull Supplier<NativeImage> getSupplier(TexSourceDataHolder data) throws JsonSyntaxException {
-        PalettePlanner planner = PalettePlanner.of(this, data);
-        if (planner == null) return ()->null;
+    public @Nullable IoSupplier<NativeImage> getSupplier(TexSourceDataHolder data, ResourceGenerationContext context) {
+        PalettePlanner planner = PalettePlanner.of(this, data, context);
+        if (planner.background == null) {
+            data.getLogger().error("Background image was none... \n{}", background);
+            return null;
+        }
+        if (planner.overlay == null) {
+            data.getLogger().error("Overlay image was none... \n{}", overlay);
+            return null;
+        }
+        if (planner.paletted == null) {
+            data.getLogger().error("Paletted image was none... \n{}", paletted);
+            return null;
+        }
         return () -> {
-            try (NativeImage bImg = background.getSupplier(data).get();
-                 NativeImage oImg = overlay.getSupplier(data).get();
-                 NativeImage pImg = paletted.getSupplier(data).get()) {
-                if (bImg == null)
-                    data.getLogger().error("Background image was none... \n{}",background);
-                if (oImg == null)
-                    data.getLogger().error("Overlay image was none... \n{}",overlay);
-                if (pImg == null)
-                    data.getLogger().error("Paletted image was none... \n{}",paletted);
+            try (NativeImage bImg = planner.background.get();
+                 NativeImage oImg = planner.overlay.get();
+                 NativeImage pImg = planner.paletted.get()) {
                 return Palette.paletteCombinedImage(bImg, oImg, pImg, planner);
             }
         };
     }
 
-    private final ITexSource overlay;
-    private final ITexSource background;
-    private final ITexSource paletted;
-    private final boolean includeBackground;
-    private final boolean stretchPaletted;
-    private final int extendPaletteSize;
-
-    public CombinedPaletteImage(ITexSource overlay, ITexSource background, ITexSource paletted, boolean includeBackground, boolean stretchPaletted, int extendPaletteSize) {
-        this.overlay = overlay;
-        this.background = background;
-        this.paletted = paletted;
-        this.includeBackground = includeBackground;
-        this.stretchPaletted = stretchPaletted;
-        this.extendPaletteSize = extendPaletteSize;
-    }
-
     public static class PalettePlanner implements IPalettePlan {
         private final CombinedPaletteImage info;
-        private Supplier<NativeImage> overlay;
-        private Supplier<NativeImage> background;
-        private Supplier<NativeImage> paletted;
+        private IoSupplier<NativeImage> overlay;
+        private IoSupplier<NativeImage> background;
+        private IoSupplier<NativeImage> paletted;
 
         private PalettePlanner(CombinedPaletteImage info) {
             this.info = info;
         }
 
-        public static PalettePlanner of(CombinedPaletteImage info, TexSourceDataHolder data) {
+        public static PalettePlanner of(CombinedPaletteImage info, TexSourceDataHolder data, ResourceGenerationContext context) {
             PalettePlanner out = new PalettePlanner(info);
-            out.background = info.background.getSupplier(data);
-            out.paletted = info.paletted.getSupplier(data);
-            out.overlay = info.overlay.getSupplier(data);
-            if (out.overlay == null || out.background == null || out.paletted == null) return null;
+            out.background = info.background.getSupplier(data, context);
+            out.paletted = info.paletted.getSupplier(data, context);
+            out.overlay = info.overlay.getSupplier(data, context);
             return out;
         }
 

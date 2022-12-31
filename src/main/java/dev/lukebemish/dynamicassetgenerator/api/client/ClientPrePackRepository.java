@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.api.client;
 
 import com.google.common.collect.ImmutableList;
@@ -10,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.resources.IoSupplier;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
@@ -34,10 +40,8 @@ public class ClientPrePackRepository {
                 provider.reset(PackType.CLIENT_RESOURCES);
             resources = Stream.concat(
                     Services.DEGROUPER.unpackPacks(((IPackRepositoryMixin) Minecraft.getInstance().getResourcePackRepository()).getSelected().stream()
-                                    .filter(p->!(p.getId().contains(DynamicAssetGenerator.CLIENT_PACK) ||
-                                            p.getId().contains(DynamicAssetGenerator.SERVER_PACK))).map(Pack::open)
-                                    .filter(p->!(p.getName().contains(DynamicAssetGenerator.CLIENT_PACK) ||
-                                            p.getName().contains(DynamicAssetGenerator.SERVER_PACK)))
+                                    .filter(p->!(p.getId().startsWith(DynamicAssetGenerator.MOD_ID+':'))).map(Pack::open)
+                                    .filter(p->!(p.packId().startsWith(DynamicAssetGenerator.MOD_ID+':')))
                                     .collect(ImmutableList.toImmutableList()))
                             .stream(),
                     InvisibleProviderUtils.INVISIBLE_RESOURCE_PROVIDERS.stream().map(InvisibleProviderUtils::constructPlaceholderResourcesFromProvider)
@@ -48,27 +52,28 @@ public class ClientPrePackRepository {
 
     @SuppressWarnings("unused")
     public static InputStream getResource(ResourceLocation rl) throws IOException {
-        InputStream resource = null;
+        IoSupplier<InputStream> resource = null;
         for (PackResources r : getResources()) {
-            if (!r.getName().equals(DynamicAssetGenerator.CLIENT_PACK) && r.hasResource(PackType.CLIENT_RESOURCES, rl)) {
-                if (resource!=null) resource.close();
-                resource = r.getResource(PackType.CLIENT_RESOURCES, rl);
+            if (!r.packId().startsWith(DynamicAssetGenerator.MOD_ID+':')) {
+                IoSupplier<InputStream> supplier = r.getResource(PackType.CLIENT_RESOURCES, rl);
+                if (supplier == null) continue;
+                resource = supplier;
             }
         }
         if (resource != null) {
-            return resource;
+            return resource.get();
         }
-        throw new IOException("Could not find resource in pre-load: "+rl.toString());
+        throw new IOException("Could not find asset in pre-load: "+rl.toString());
     }
 
     @SuppressWarnings("unused")
     public static Stream<InputStream> getResources(ResourceLocation rl) throws IOException {
         List<InputStream> out = new ArrayList<>();
         for (PackResources r : getResources()) {
-            if (!r.getName().contains(DynamicAssetGenerator.CLIENT_PACK) && r.hasResource(PackType.CLIENT_RESOURCES, rl)) {
-                InputStream resource = r.getResource(PackType.CLIENT_RESOURCES, rl);
-                if (resource!=null)
-                    out.add(0, resource);
+            if (!r.packId().startsWith(DynamicAssetGenerator.MOD_ID+':')) {
+                IoSupplier<InputStream> supplier = r.getResource(PackType.CLIENT_RESOURCES, rl);
+                if (supplier == null) continue;
+                out.add(supplier.get());
             }
         }
         if (!out.isEmpty()) {

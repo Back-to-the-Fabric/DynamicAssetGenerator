@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.client.palette;
 
 import dev.lukebemish.dynamicassetgenerator.impl.client.ColorConversionUtils;
@@ -166,7 +171,7 @@ public class ColorHolder implements Comparable<ColorHolder> {
         float max = max(r,g,b);
         float min = min(r,g,b);
         float h,s,l;
-        h = s = l = (max+min)/2;
+        l = (max+min)/2;
         if (max==min) {
             h=s=0;
         } else {

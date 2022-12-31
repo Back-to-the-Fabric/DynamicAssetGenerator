@@ -1,7 +1,12 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.client.util;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.ColorHolder;
+import com.mojang.blaze3d.platform.NativeImage;
 
 public class SafeImageExtraction {
     private SafeImageExtraction() {}

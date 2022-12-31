@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl;
 
 import com.google.common.collect.BiMap;
@@ -10,6 +15,5 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Internal
 public class CommonRegisters {
     private CommonRegisters() {}
-    public static final BiMap<ResourceLocation, Codec<? extends IResourceGenerator>>
-            IRESOURCEGENERATORS = HashBiMap.create();
+    public static final BiMap<ResourceLocation, Codec<? extends IResourceGenerator>> IRESOURCEGENERATORS = HashBiMap.create();
 }

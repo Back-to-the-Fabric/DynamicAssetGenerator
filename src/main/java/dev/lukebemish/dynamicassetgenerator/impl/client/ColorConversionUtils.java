@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.client;
 
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.ColorHolder;
@@ -42,7 +47,7 @@ public class ColorConversionUtils {
         double _L = (116 * _y) - 16;
         double _a = 500 * (_x - _y);
         double _b = 200 * (_y - _z);
-        return new ColorHolder((float)_L/_L_scale, (float)_a/_a_scale,(float)_b/_a_scale);
+        return new ColorHolder((float)_L/_L_scale, (float)_a/_a_scale,(float)_b/_b_scale);
     }
 
     private static final float _L_scale = 100;
@@ -52,7 +57,7 @@ public class ColorConversionUtils {
     public static ColorHolder lab2xyz(ColorHolder lab) {
         double _y = (lab.get_L()*_L_scale+16f)/116f;
         double _x = lab.get_a()*_a_scale/500f + _y;
-        double _z = _y - lab.get_b()*_a_scale/200f;
+        double _z = _y - lab.get_b()*_b_scale/200f;
 
         double x3 = _x*_x*_x;
         float x = (float) (((x3 > 0.008856f) ? x3 : ((_x - 16.f/116.f) / 7.787)) * refX);

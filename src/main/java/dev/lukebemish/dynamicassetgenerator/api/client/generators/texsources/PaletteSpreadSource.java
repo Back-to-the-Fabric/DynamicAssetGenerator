@@ -1,17 +1,21 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.api.client.generators.texsources;
 
-import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.lukebemish.dynamicassetgenerator.api.ResourceGenerationContext;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.ITexSource;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.TexSourceDataHolder;
 import dev.lukebemish.dynamicassetgenerator.impl.client.NativeImageHelper;
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.ColorHolder;
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.Palette;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Supplier;
+import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.Nullable;
 
 public record PaletteSpreadSource(ITexSource source, float paletteCutoff, float lowerBound, float upperBound)
         implements ITexSource {
@@ -28,15 +32,14 @@ public record PaletteSpreadSource(ITexSource source, float paletteCutoff, float 
     }
 
     @Override
-    @NotNull
-    public Supplier<NativeImage> getSupplier(TexSourceDataHolder data) throws JsonSyntaxException {
+    public @Nullable IoSupplier<NativeImage> getSupplier(TexSourceDataHolder data, ResourceGenerationContext context) {
+        IoSupplier<NativeImage> source = source().getSupplier(data, context);
+        if (source == null) {
+            data.getLogger().error("Texture given was nonexistent...\n{}", this.source());
+            return null;
+        }
         return () -> {
-            Supplier<NativeImage> source = source().getSupplier(data);
             try (NativeImage sourceImg = source.get()) {
-                if (sourceImg == null) {
-                    data.getLogger().error(ErrorSource.nonExistentErrorF, this.source());
-                    return null;
-                }
                 Palette palette = Palette.extractPalette(sourceImg, 0, paletteCutoff());
                 NativeImage outImg = NativeImageHelper.of(NativeImage.Format.RGBA, sourceImg.getWidth(), sourceImg.getHeight(), false);
 

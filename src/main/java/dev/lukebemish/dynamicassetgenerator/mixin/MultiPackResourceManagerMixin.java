@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.mixin;
 
 import dev.lukebemish.dynamicassetgenerator.api.ServerPrePackRepository;
@@ -13,9 +18,8 @@ import java.util.List;
 
 @Mixin(MultiPackResourceManager.class)
 public class MultiPackResourceManagerMixin {
-    @ModifyVariable(method = "<init>", at = @At("HEAD"), argsOnly = true)
-    private static List<PackResources> dynamicAssetGeneratorLoadPacks(List<PackResources> packs, PackType type,
-                                                                      List<PackResources> packsAgain) {
+    @ModifyVariable(method = "<init>", at = @At(value = "HEAD"), argsOnly = true)
+    private static List<PackResources> dynamic_asset_generator$loadPacks(List<PackResources> packs, PackType type, List<PackResources> packsAgain) {
         if (type == PackType.CLIENT_RESOURCES) {
             ClientPrePackRepository.resetResources();
         }

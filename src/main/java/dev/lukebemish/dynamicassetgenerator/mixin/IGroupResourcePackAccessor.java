@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
 
-@Mixin(value = GroupResourcePack.class, remap = false)
-public interface IGroupResourcePackMixin {
-    @Accessor
+@Mixin(GroupResourcePack.class)
+public interface IGroupResourcePackAccessor {
+    @Accessor("packs")
     List<ModResourcePack> getPacks();
 }

@@ -3,13 +3,13 @@
   "id": "dynamic_asset_generator",
   "version": "${version}",
   "name": "DynamicAssetGenerator",
-  "description": "Dynamically generate and load assets on runtime",
+  "description": "A tool for generating asset and data resources at runtime from existing resources.",
   "authors": [
     "Nerjal Nosk",
     "Luke Bemish"
   ],
   "contact": {},
-  "license": "GNU",
+  "license": "LGPL-3.0-or-later",
   "environment": "*",
   "entrypoints": {
     "client": [
@@ -24,7 +24,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.14.11",
-    "fabric": "*",
-    "minecraft": "1.19"
+    "fabric": ">=0.68",
+    "minecraft": "1.19.3"
   }
 }

@@ -1,7 +1,14 @@
-package dev.lukebemish.dynamicassetgenerator.impl.tags;
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
+package dev.lukebemish.dynamicassetgenerator.api.sources;
 
 import dev.lukebemish.dynamicassetgenerator.api.IPathAwareInputStreamSource;
+import dev.lukebemish.dynamicassetgenerator.api.ResourceGenerationContext;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.IoSupplier;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
@@ -9,16 +16,36 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.function.Supplier;
 
+@SuppressWarnings("unused")
 public class TagBakery implements IPathAwareInputStreamSource {
     private Map<ResourceLocation, List<Supplier<Set<ResourceLocation>>>> bakedTags;
     private final List<Supplier<Map<ResourceLocation,Set<ResourceLocation>>>> tagQueue;
 
-    public TagBakery(List<Supplier<Map<ResourceLocation,Set<ResourceLocation>>>> tagQueue) {
-        this.tagQueue = tagQueue;
+    private final Map<ResourceLocation, Set<ResourceLocation>> staticQueue = new HashMap<>();
+
+    public TagBakery() {
+        this.tagQueue = new ArrayList<>();
+        this.tagQueue.add(() -> staticQueue);
+    }
+
+    public void queue(Supplier<Map<ResourceLocation,Set<ResourceLocation>>> tagSupplier) {
+        this.tagQueue.add(tagSupplier);
+    }
+
+    public void queue(ResourceLocation tag, Set<ResourceLocation> entries) {
+        staticQueue.computeIfAbsent(tag, k -> new HashSet<>()).addAll(entries);
+    }
+
+    public void queue(ResourceLocation tag, ResourceLocation entry) {
+        staticQueue.computeIfAbsent(tag, k -> new HashSet<>()).add(entry);
+    }
+
+    public void queue(Map<ResourceLocation, Set<ResourceLocation>> tags) {
+        tags.forEach((tag, entries) -> staticQueue.computeIfAbsent(tag, k -> new HashSet<>()).addAll(entries));
     }
 
     @Override
-    public @NotNull Supplier<InputStream> get(ResourceLocation outRl) {
+    public IoSupplier<InputStream> get(ResourceLocation outRl, ResourceGenerationContext context) {
         return () -> {
             checkTags();
             return build(bakedTags.get(outRl));
@@ -51,7 +78,7 @@ public class TagBakery implements IPathAwareInputStreamSource {
         bakedTags = null;
     }
 
-    public void checkTags() {
+    private void checkTags() {
         if (bakedTags == null) {
             bakedTags = new HashMap<>();
             tagQueue.forEach(supplier -> {

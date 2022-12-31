@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.mixin;
 
 import dev.lukebemish.dynamicassetgenerator.api.ServerPrePackRepository;
@@ -19,15 +24,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @Mixin(ReloadableResourceManager.class)
-public class ReloadableResourceManagerMixin {
+public abstract class ReloadableResourceManagerMixin {
+    @Shadow
+    @Final
+    private PackType type;
 
-    @Shadow @Final private PackType type;
-
-    @Inject(method = "createReload", at = @At("HEAD"))
-    private void dynamicAssetGeneratorInsertResourcePack(Executor preparationExecutor, Executor reloadExecutor,
-                                                         CompletableFuture<Unit> afterPreparation,
-                                                         List<PackResources> packs,
-                                                         CallbackInfoReturnable<ReloadInstance> cir) {
+    @Inject(method = "createReload", at = @At(value = "HEAD"))
+    private void dynamic_asset_generator$insertResourcePack(Executor preparationExecutor,
+                                                            Executor reloadExecutor,
+                                                            CompletableFuture<Unit> afterPreparation,
+                                                            List<PackResources> packs,
+                                                            CallbackInfoReturnable<ReloadInstance> cir) {
         if (type == PackType.CLIENT_RESOURCES) {
             ClientPrePackRepository.resetResources();
         }

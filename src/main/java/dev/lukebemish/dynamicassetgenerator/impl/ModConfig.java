@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl;
 
 import com.google.gson.Gson;
@@ -14,19 +19,14 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public record ModConfig(boolean cacheAssets, boolean cacheData, int paletteForceClusteringCutOff) {
+public record ModConfig(boolean cacheAssets, boolean cacheData, int paletteForceClusteringCutoff) {
     public static final Codec<ModConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.fieldOf("cache_assets").forGetter(ModConfig::cacheAssets),
             Codec.BOOL.fieldOf("cache_data").forGetter(ModConfig::cacheData),
-            Codec.INT.fieldOf("palette_extraction_force_clustering_cutoff")
-                    .forGetter(ModConfig::paletteForceClusteringCutOff)
+            Codec.INT.fieldOf("palette_extraction_force_clustering_cutoff").forGetter(ModConfig::paletteForceClusteringCutoff)
     ).apply(instance, ModConfig::new));
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting()
-            .excludeFieldsWithoutExposeAnnotation().create();
-    public static final Path FULL_PATH = Services.PLATFORM.getConfigFolder()
-            .resolve(DynamicAssetGenerator.MOD_ID+".json");
-    public static final Path ASSET_CACHE_FOLDER = Services.PLATFORM.getModDataFolder().resolve("asset_cache");
-    public static final Path DATA_CACHE_FOLDER = Services.PLATFORM.getModDataFolder().resolve("data_cache");
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
+    public static final Path FULL_PATH = Services.PLATFORM.getConfigFolder().resolve(DynamicAssetGenerator.MOD_ID+".json");
 
     private static ModConfig load() {
         ModConfig config = getDefault();
@@ -45,8 +45,6 @@ public record ModConfig(boolean cacheAssets, boolean cacheData, int paletteForce
         }
         return config;
     }
-
-
 
     public static ModConfig get() {
         return load();

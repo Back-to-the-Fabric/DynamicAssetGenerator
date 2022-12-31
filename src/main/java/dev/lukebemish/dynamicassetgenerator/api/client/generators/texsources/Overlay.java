@@ -1,20 +1,25 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.api.client.generators.texsources;
 
-import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.lukebemish.dynamicassetgenerator.api.ResourceGenerationContext;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.ITexSource;
 import dev.lukebemish.dynamicassetgenerator.api.client.generators.TexSourceDataHolder;
 import dev.lukebemish.dynamicassetgenerator.impl.client.NativeImageHelper;
 import dev.lukebemish.dynamicassetgenerator.impl.client.palette.ColorHolder;
 import dev.lukebemish.dynamicassetgenerator.impl.client.util.SafeImageExtraction;
 import dev.lukebemish.dynamicassetgenerator.impl.util.MultiCloser;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 public record Overlay(List<ITexSource> inputs) implements ITexSource {
     public static final Codec<Overlay> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -27,21 +32,23 @@ public record Overlay(List<ITexSource> inputs) implements ITexSource {
     }
 
     @Override
-    @NotNull
-    public Supplier<NativeImage> getSupplier(TexSourceDataHolder data) throws JsonSyntaxException {
-        List<Supplier<NativeImage>> inputs = new ArrayList<>();
+    public @Nullable IoSupplier<NativeImage> getSupplier(TexSourceDataHolder data, ResourceGenerationContext context) {
+        List<IoSupplier<NativeImage>> inputs = new ArrayList<>();
         for (ITexSource o : this.inputs()) {
-            inputs.add(o.getSupplier(data));
+            inputs.add(o.getSupplier(data, context));
+        }
+        for (int i = 0; i < inputs.size(); i++) {
+            if (inputs.get(i)==null) {
+                data.getLogger().error("Texture given was nonexistent...\n{}",this.inputs().get(i).toString());
+                return null;
+            }
         }
         return () -> {
             int maxX = 0;
             int maxY = 0;
-            List<NativeImage> images = inputs.stream().map(Supplier::get).toList();
-            for (int i = 0; i < images.size(); i++) {
-                if (images.get(i)==null) {
-                    data.getLogger().error(ErrorSource.nonExistentErrorF,this.inputs().get(i).toString());
-                    return null;
-                }
+            List<NativeImage> images = new ArrayList<>();
+            for (var input : inputs) {
+                images.add(input.get());
             }
             for (NativeImage image : images) {
                 if (image.getWidth() > maxX) {
@@ -52,8 +59,8 @@ public record Overlay(List<ITexSource> inputs) implements ITexSource {
             try (MultiCloser ignored = new MultiCloser(images)) {
                 NativeImage output = NativeImageHelper.of(NativeImage.Format.RGBA, maxX, maxY, false);
                 NativeImage base = images.get(0);
-                int xs = 1;
-                int ys = 1;
+                int xs;
+                int ys;
                 if (base.getWidth() / (base.getHeight() * 1.0) <= maxX / (maxY * 1.0)) {
                     xs = maxX / base.getWidth();
                     ys = maxY / base.getWidth();

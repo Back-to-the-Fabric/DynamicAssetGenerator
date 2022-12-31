@@ -1,20 +1,29 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.util;
 
-import dev.lukebemish.dynamicassetgenerator.api.ConditionalInvisibleResourceProvider;
-import dev.lukebemish.dynamicassetgenerator.api.InvisibleResourceProvider;
+import dev.lukebemish.dynamicassetgenerator.api.compat.ConditionalInvisibleResourceProvider;
+import dev.lukebemish.dynamicassetgenerator.api.compat.InvisibleResourceProvider;
 import dev.lukebemish.dynamicassetgenerator.impl.DynamicAssetGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
+import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.List;
+import java.util.Locale;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Stream;
 
-public class InvisibleProviderUtils {
+public final class InvisibleProviderUtils {
     public static final List<InvisibleResourceProvider> INVISIBLE_RESOURCE_PROVIDERS =
             Stream.concat(
                     ServiceLoader.load(InvisibleResourceProvider.class).stream()
@@ -35,38 +44,33 @@ public class InvisibleProviderUtils {
         return new PackResources() {
             @Nullable
             @Override
-            public InputStream getRootResource(String fileName) {
+            public IoSupplier<InputStream> getRootResource(String @NotNull ... strings) {
                 return null;
             }
 
             @Override
-            public InputStream getResource(PackType type, ResourceLocation location) {
+            public IoSupplier<InputStream> getResource(@NotNull PackType type, @NotNull ResourceLocation location) {
                 return provider.getResource(type, location);
             }
 
             @Override
-            public Collection<ResourceLocation> getResources(PackType type, String namespace, String path, Predicate<ResourceLocation> filter) {
-                return provider.getResources(type, namespace, path, filter);
+            public void listResources(@NotNull PackType packType, @NotNull String namespace, @NotNull String path, @NotNull ResourceOutput resourceOutput) {
+                provider.listResources(packType, namespace, path, resourceOutput);
             }
 
             @Override
-            public boolean hasResource(PackType type, ResourceLocation location) {
-                return provider.hasResource(type, location);
-            }
-
-            @Override
-            public Set<String> getNamespaces(PackType type) {
+            public @NotNull Set<String> getNamespaces(@NotNull PackType type) {
                 return provider.getNamespaces(type);
             }
 
             @Nullable
             @Override
-            public <T> T getMetadataSection(MetadataSectionSerializer<T> deserializer) {
+            public <T> T getMetadataSection(@NotNull MetadataSectionSerializer<T> deserializer) {
                 return null;
             }
 
             @Override
-            public String getName() {
+            public @NotNull String packId() {
                 return "placeholder__"+provider.getClass().getName().toLowerCase(Locale.ROOT)
                         .replace('.', '_')
                         .replace('$', '_');

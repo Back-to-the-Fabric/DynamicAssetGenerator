@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2022 Luke Bemish and contributors
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 package dev.lukebemish.dynamicassetgenerator.impl.client.palette;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -34,9 +39,9 @@ public class Palette {
         AtomicReference<Float> z= new AtomicReference<>((float) 0);
         AtomicInteger count= new AtomicInteger();
         getStream().forEach((c)->{
-            x.updateAndGet(v -> (float) (v + c.getR()));
-            y.updateAndGet(v -> (float) (v + c.getG()));
-            z.updateAndGet(v -> (float) (v + c.getB()));
+            x.updateAndGet(v -> v + c.getR());
+            y.updateAndGet(v -> v + c.getG());
+            z.updateAndGet(v -> v + c.getB());
             count.getAndIncrement();
         });
         int c = count.get();
