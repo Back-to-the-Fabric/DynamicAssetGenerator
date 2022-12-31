@@ -25,6 +25,7 @@
   "depends": {
     "fabricloader": ">=0.14.11",
     "fabric": "*",
-    "minecraft": "1.19"
+    "minecraft": "1.19",
+    "arrp": "0.6.4"
   }
 }
