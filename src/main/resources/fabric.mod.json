@@ -4,6 +4,7 @@
   "version": "${version}",
   "name": "DynamicAssetGenerator",
   "description": "A tool for generating asset and data resources at runtime from existing resources.",
+  "icon": "assets/dynamic_asset_generator/icon.png",
   "authors": [
     "Nerjal Nosk",
     "Luke Bemish"
