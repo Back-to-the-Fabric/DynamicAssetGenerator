@@ -10,7 +10,7 @@
     "Luke Bemish"
   ],
   "contact": {},
-  "license": "GNU",
+  "license": "LGPLv3",
   "environment": "*",
   "entrypoints": {
     "client": [
